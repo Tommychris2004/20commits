@@ -1,0 +1,12 @@
+{
+  "name": "gridnode",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "cd frontend && npm ci && npm run build && cd ../backend && npm ci && npm run build",
+    "start": "node backend/dist/index.js"
+  }
+}
