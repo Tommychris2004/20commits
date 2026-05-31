@@ -14,7 +14,13 @@ const DDL = /* sql */ `
 -- Extensions
 -- ----------------------------------------------------------------
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-CREATE EXTENSION IF NOT EXISTS "timescaledb" CASCADE;
+-- TimescaleDB loaded only when available (optional — plain PostgreSQL works for dev/small scale)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'timescaledb') THEN
+    EXECUTE 'CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE';
+  END IF;
+END$$;
 
 -- ----------------------------------------------------------------
 -- estates (multi-tenant)
@@ -66,27 +72,35 @@ CREATE INDEX IF NOT EXISTS idx_devices_estate_id ON devices(estate_id);
 CREATE INDEX IF NOT EXISTS idx_devices_node_id   ON devices(node_id);
 
 -- ----------------------------------------------------------------
--- readings (TimescaleDB hypertable)
+-- readings (plain PostgreSQL — TimescaleDB optional for scale)
 -- ----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS readings (
-  id           BIGSERIAL,
+  id           BIGSERIAL   PRIMARY KEY,
   device_id    UUID        NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
   timestamp    TIMESTAMPTZ NOT NULL,
   source       TEXT        NOT NULL CHECK (source IN ('generator','solar','grid')),
   power_kw     NUMERIC(10,3) NOT NULL CHECK (power_kw  >= 0),
   energy_kwh   NUMERIC(10,4) NOT NULL CHECK (energy_kwh >= 0),
-  is_simulated BOOLEAN     NOT NULL DEFAULT false,
-  PRIMARY KEY (id, timestamp)
+  is_simulated BOOLEAN     NOT NULL DEFAULT false
 );
 
--- Create hypertable only if not already one
+-- Upgrade to hypertable if TimescaleDB is available (fully dynamic to avoid parse errors)
 DO $$
+DECLARE
+  tsdb_installed boolean;
+  already_hyper  boolean;
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM timescaledb_information.hypertables
-    WHERE hypertable_name = 'readings'
-  ) THEN
-    PERFORM create_hypertable('readings', 'timestamp');
+  SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') INTO tsdb_installed;
+  IF tsdb_installed THEN
+    EXECUTE $dyn$
+      SELECT EXISTS(
+        SELECT 1 FROM timescaledb_information.hypertables
+        WHERE hypertable_name = 'readings'
+      )
+    $dyn$ INTO already_hyper;
+    IF NOT already_hyper THEN
+      PERFORM create_hypertable('readings', 'timestamp');
+    END IF;
   END IF;
 END$$;
 

@@ -3,9 +3,15 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
+import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
+import path from 'path';
 import { config } from './config.js';
 import { checkDbConnection } from './db/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FRONTEND_DIST = path.resolve(__dirname, '../../frontend/dist');
 
 // Routes
 import { healthRouter } from './routes/health.js';
@@ -23,7 +29,11 @@ import { devicesRouter } from './routes/devices.js';
 const app = express();
 
 // ---- Security headers ----
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Vite assets use inline scripts in dev builds
+  }),
+);
 
 // ---- CORS ----
 app.use(
@@ -71,7 +81,17 @@ app.use('/api/estate', estateRouter);
 app.use('/api/trading', tradingRouter);
 app.use('/api/devices', devicesRouter);
 
-// ---- 404 handler ----
+// ---- Serve frontend static files ----
+import fs from 'fs';
+if (fs.existsSync(FRONTEND_DIST)) {
+  app.use(express.static(FRONTEND_DIST));
+  // SPA fallback — all non-API routes serve index.html
+  app.get(/^(?!\/api).*/, (_req, res) => {
+    res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
+  });
+}
+
+// ---- 404 handler (API routes only) ----
 app.use((_req, res) => {
   res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Endpoint not found' } });
 });
