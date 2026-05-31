@@ -14,7 +14,13 @@ const DDL = /* sql */ `
 -- Extensions
 -- ----------------------------------------------------------------
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-CREATE EXTENSION IF NOT EXISTS "timescaledb" CASCADE;
+-- TimescaleDB loaded only when available (optional — plain PostgreSQL works for dev/small scale)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'timescaledb') THEN
+    EXECUTE 'CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE';
+  END IF;
+END$$;
 
 -- ----------------------------------------------------------------
 -- estates (multi-tenant)
@@ -66,27 +72,35 @@ CREATE INDEX IF NOT EXISTS idx_devices_estate_id ON devices(estate_id);
 CREATE INDEX IF NOT EXISTS idx_devices_node_id   ON devices(node_id);
 
 -- ----------------------------------------------------------------
--- readings (TimescaleDB hypertable)
+-- readings (plain PostgreSQL — TimescaleDB optional for scale)
 -- ----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS readings (
-  id           BIGSERIAL,
+  id           BIGSERIAL   PRIMARY KEY,
   device_id    UUID        NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
   timestamp    TIMESTAMPTZ NOT NULL,
   source       TEXT        NOT NULL CHECK (source IN ('generator','solar','grid')),
   power_kw     NUMERIC(10,3) NOT NULL CHECK (power_kw  >= 0),
   energy_kwh   NUMERIC(10,4) NOT NULL CHECK (energy_kwh >= 0),
-  is_simulated BOOLEAN     NOT NULL DEFAULT false,
-  PRIMARY KEY (id, timestamp)
+  is_simulated BOOLEAN     NOT NULL DEFAULT false
 );
 
--- Create hypertable only if not already one
+-- Upgrade to hypertable if TimescaleDB is available (fully dynamic to avoid parse errors)
 DO $$
+DECLARE
+  tsdb_installed boolean;
+  already_hyper  boolean;
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM timescaledb_information.hypertables
-    WHERE hypertable_name = 'readings'
-  ) THEN
-    PERFORM create_hypertable('readings', 'timestamp');
+  SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') INTO tsdb_installed;
+  IF tsdb_installed THEN
+    EXECUTE $dyn$
+      SELECT EXISTS(
+        SELECT 1 FROM timescaledb_information.hypertables
+        WHERE hypertable_name = 'readings'
+      )
+    $dyn$ INTO already_hyper;
+    IF NOT already_hyper THEN
+      PERFORM create_hypertable('readings', 'timestamp');
+    END IF;
   END IF;
 END$$;
 
@@ -162,9 +176,32 @@ CREATE TABLE IF NOT EXISTS financing_applications (
 );
 
 CREATE INDEX IF NOT EXISTS idx_financing_user_id ON financing_applications(user_id);
+
+-- ----------------------------------------------------------------
+-- energy_trades (completed P2P transactions)
+-- ----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS energy_trades (
+  id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  offer_id         UUID        REFERENCES trading_offers(id) ON DELETE SET NULL,
+  buyer_user_id    UUID        REFERENCES users(id) ON DELETE SET NULL,
+  seller_device_id UUID        REFERENCES devices(id) ON DELETE SET NULL,
+  estate_id        UUID        REFERENCES estates(id) ON DELETE SET NULL,
+  quantity_kwh     NUMERIC(10,4) NOT NULL,
+  price_per_kwh    NUMERIC(8,2)  NOT NULL,
+  gross_naira      NUMERIC(12,2) NOT NULL,
+  commission_naira NUMERIC(12,2) NOT NULL,
+  seller_naira     NUMERIC(12,2) NOT NULL,
+  status           TEXT        NOT NULL DEFAULT 'completed'
+                               CHECK (status IN ('completed','cancelled','disputed')),
+  traded_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_trades_buyer    ON energy_trades(buyer_user_id, traded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_trades_seller   ON energy_trades(seller_device_id, traded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_trades_estate   ON energy_trades(estate_id, traded_at DESC);
 `;
 
-async function runMigrations(): Promise<void> {
+export async function runMigrations(endPool = true): Promise<void> {
   console.info('[migrate] Checking database connection…');
   await checkDbConnection();
 
@@ -172,10 +209,13 @@ async function runMigrations(): Promise<void> {
   await pool.query(DDL);
 
   console.info('[migrate] ✅  Schema up-to-date.');
-  await pool.end();
+  if (endPool) await pool.end();
 }
 
-runMigrations().catch((err) => {
-  console.error('[migrate] ❌  Migration failed:', err);
-  process.exit(1);
-});
+// Run directly when executed as a script
+if (process.argv[1] && process.argv[1].includes('migrations')) {
+  runMigrations().catch((err) => {
+    console.error('[migrate] ❌  Migration failed:', err);
+    process.exit(1);
+  });
+}

@@ -1,6 +1,6 @@
 import { getAuth, clearAuth } from '../store/index.ts';
 
-const BASE = (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL ?? '/api';
+const BASE = (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL ?? '';
 
 class ApiError extends Error {
   constructor(
@@ -53,6 +53,8 @@ export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
+  patch: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 };
 
@@ -145,4 +147,48 @@ export const devicesApi = {
   register: (node_id: string, name?: string) =>
     api.post<{ device: unknown }>('/api/devices/register', { node_id, name }),
   getAll: () => api.get<{ devices: unknown[] }>('/api/devices'),
+};
+
+export interface TradeOffer {
+  id: string;
+  seller_label: string;
+  price_per_kwh: number;
+  quantity_kwh: number;
+  status: string;
+  is_mine: boolean;
+  created_at: string;
+  expires_at: string | null;
+}
+
+export interface Trade {
+  id: string;
+  side: 'buy' | 'sell';
+  seller_label: string;
+  quantity_kwh: number;
+  price_per_kwh: number;
+  gross_naira: number;
+  seller_naira: number;
+  status: string;
+  traded_at: string;
+}
+
+export interface TradingMarketResponse {
+  offers: TradeOffer[];
+  my_offers: TradeOffer[];
+  monthly_earnings_naira: number;
+  commission_rate_pct: number;
+}
+
+export const tradingApi = {
+  getOffers: () => api.get<TradingMarketResponse>('/api/trading/offers'),
+  createOffer: (price_per_kwh: number, quantity_kwh: number) =>
+    api.post<{ offer: TradeOffer }>('/api/trading/offers', { price_per_kwh, quantity_kwh }),
+  updateOffer: (id: string, data: Partial<{ price_per_kwh: number; quantity_kwh: number; status: string }>) =>
+    api.patch<{ status: string }>(`/api/trading/offers/${id}`, data),
+  buyOffer: (id: string, quantity_kwh: number) =>
+    api.post<{ summary: { quantity_kwh: number; gross_naira: number; commission_naira: number; message: string } }>(
+      `/api/trading/offers/${id}/buy`,
+      { quantity_kwh },
+    ),
+  getHistory: () => api.get<{ trades: Trade[] }>('/api/trading/history'),
 };

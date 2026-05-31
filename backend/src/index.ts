@@ -3,9 +3,16 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import fs from 'fs';
 import { config } from './config.js';
 import { checkDbConnection } from './db/index.js';
+import { runMigrations } from './db/migrations.js';
 import { errorHandler } from './middleware/errorHandler.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FRONTEND_DIST = path.join(__dirname, 'public');
 
 // Routes
 import { healthRouter } from './routes/health.js';
@@ -22,13 +29,28 @@ import { devicesRouter } from './routes/devices.js';
 
 const app = express();
 
+// Trust Railway's reverse proxy so rate-limiting and IP detection work correctly
+app.set('trust proxy', 1);
+
 // ---- Security headers ----
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Vite assets use inline scripts in dev builds
+  }),
+);
 
 // ---- CORS ----
+const allowedOrigins = new Set([config.FRONTEND_ORIGIN, 'http://localhost:5173', 'http://localhost:3000']);
 app.use(
   cors({
-    origin: config.FRONTEND_ORIGIN,
+    origin: (origin, cb) => {
+      // Same-origin or no-origin requests (curl, mobile apps) are always allowed
+      if (!origin || allowedOrigins.has(origin) || origin.endsWith('.railway.app') || origin.endsWith('.up.railway.app')) {
+        cb(null, true);
+      } else {
+        cb(null, false);
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -71,7 +93,16 @@ app.use('/api/estate', estateRouter);
 app.use('/api/trading', tradingRouter);
 app.use('/api/devices', devicesRouter);
 
-// ---- 404 handler ----
+// ---- Serve frontend static files ----
+if (fs.existsSync(FRONTEND_DIST)) {
+  app.use(express.static(FRONTEND_DIST));
+  // SPA fallback — all non-API routes serve index.html
+  app.get(/^(?!\/api).*/, (_req, res) => {
+    res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
+  });
+}
+
+// ---- 404 handler (API routes only) ----
 app.use((_req, res) => {
   res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Endpoint not found' } });
 });
@@ -81,7 +112,8 @@ app.use(errorHandler);
 
 // ---- Boot ----
 async function start(): Promise<void> {
-  await checkDbConnection();
+  // Auto-migrate so Railway (and other platforms) need no separate migration step
+  await runMigrations(false);
   app.listen(config.PORT, () => {
     console.info(`[server] GridNode API listening on port ${config.PORT} (${config.NODE_ENV})`);
   });

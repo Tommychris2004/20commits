@@ -4,6 +4,7 @@ import { Navigation } from './components/Navigation.tsx';
 import { EnergyDashboard } from './screens/EnergyDashboard.tsx';
 import { EnergyHistory } from './screens/EnergyHistory.tsx';
 import { Network } from './screens/Network.tsx';
+import { Trading } from './screens/Trading.tsx';
 import { CarbonDashboard } from './screens/Carbon/CarbonDashboard.tsx';
 import { Profile } from './screens/Profile.tsx';
 import { Onboarding } from './screens/Onboarding.tsx';
@@ -34,6 +35,7 @@ function AppShell() {
           <Route path="/energy" element={<EnergyDashboard />} />
           <Route path="/history" element={<EnergyHistory />} />
           <Route path="/network" element={<Network />} />
+          <Route path="/trading" element={<Trading />} />
           <Route path="/carbon" element={<CarbonDashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/financing" element={<Financing />} />
