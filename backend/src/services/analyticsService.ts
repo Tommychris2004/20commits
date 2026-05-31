@@ -121,7 +121,7 @@ export async function getWeeklyHistory(deviceId: string): Promise<DailyCostRecor
     total_kwh: string;
   }>(
     `SELECT
-       to_char(time_bucket('1 day', timestamp), 'YYYY-MM-DD') AS date,
+       to_char(date_trunc('day', timestamp), 'YYYY-MM-DD') AS date,
        source,
        SUM(energy_kwh) AS total_kwh
      FROM readings
