@@ -178,7 +178,7 @@ CREATE TABLE IF NOT EXISTS financing_applications (
 CREATE INDEX IF NOT EXISTS idx_financing_user_id ON financing_applications(user_id);
 `;
 
-async function runMigrations(): Promise<void> {
+export async function runMigrations(endPool = true): Promise<void> {
   console.info('[migrate] Checking database connection…');
   await checkDbConnection();
 
@@ -186,10 +186,13 @@ async function runMigrations(): Promise<void> {
   await pool.query(DDL);
 
   console.info('[migrate] ✅  Schema up-to-date.');
-  await pool.end();
+  if (endPool) await pool.end();
 }
 
-runMigrations().catch((err) => {
-  console.error('[migrate] ❌  Migration failed:', err);
-  process.exit(1);
-});
+// Run directly when executed as a script
+if (process.argv[1] && process.argv[1].includes('migrations')) {
+  runMigrations().catch((err) => {
+    console.error('[migrate] ❌  Migration failed:', err);
+    process.exit(1);
+  });
+}
