@@ -9,7 +9,7 @@ export const pool = new Pool({
   max: 20,                   // max connections in pool
   idleTimeoutMillis: 30_000, // close idle connections after 30s
   connectionTimeoutMillis: 5_000, // fail fast if can't get a connection
-  ssl: config.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false,
+  ssl: config.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
 pool.on('error', (err) => {
