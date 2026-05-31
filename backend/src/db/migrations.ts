@@ -176,6 +176,29 @@ CREATE TABLE IF NOT EXISTS financing_applications (
 );
 
 CREATE INDEX IF NOT EXISTS idx_financing_user_id ON financing_applications(user_id);
+
+-- ----------------------------------------------------------------
+-- energy_trades (completed P2P transactions)
+-- ----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS energy_trades (
+  id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  offer_id         UUID        REFERENCES trading_offers(id) ON DELETE SET NULL,
+  buyer_user_id    UUID        REFERENCES users(id) ON DELETE SET NULL,
+  seller_device_id UUID        REFERENCES devices(id) ON DELETE SET NULL,
+  estate_id        UUID        REFERENCES estates(id) ON DELETE SET NULL,
+  quantity_kwh     NUMERIC(10,4) NOT NULL,
+  price_per_kwh    NUMERIC(8,2)  NOT NULL,
+  gross_naira      NUMERIC(12,2) NOT NULL,
+  commission_naira NUMERIC(12,2) NOT NULL,
+  seller_naira     NUMERIC(12,2) NOT NULL,
+  status           TEXT        NOT NULL DEFAULT 'completed'
+                               CHECK (status IN ('completed','cancelled','disputed')),
+  traded_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_trades_buyer    ON energy_trades(buyer_user_id, traded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_trades_seller   ON energy_trades(seller_device_id, traded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_trades_estate   ON energy_trades(estate_id, traded_at DESC);
 `;
 
 export async function runMigrations(endPool = true): Promise<void> {

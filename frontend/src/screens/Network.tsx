@@ -6,6 +6,7 @@ import { Badge } from '../components/ui/Badge.tsx';
 import { FullPageSkeleton } from '../components/ui/Skeleton.tsx';
 import { useApi } from '../hooks/useApi.ts';
 import { estateApi, type EstateResponse } from '../api/client.ts';
+import { Trading } from './Trading.tsx';
 import clsx from 'clsx';
 
 function fmt(n: number) {
@@ -21,7 +22,7 @@ const DEMO_DEVICES = [
   { id: '6', label: 'You', status: 'online', solar_kwh: 87, rank: 8, isMe: true },
 ];
 
-type Tab = 'overview' | 'leaderboard';
+type Tab = 'overview' | 'leaderboard' | 'trading';
 
 function NodeDot({ status }: { status: string }) {
   return (
@@ -139,17 +140,17 @@ export function Network() {
 
         {/* Tab switcher */}
         <div className="flex p-1 gap-1 bg-surface-elevated rounded-2xl">
-          {(['overview', 'leaderboard'] as Tab[]).map((tab) => (
+          {(['overview', 'leaderboard', 'trading'] as Tab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+              className={`flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
                 activeTab === tab
                   ? 'bg-brand-red text-white shadow-md'
                   : 'text-text-muted hover:text-text-secondary'
               }`}
             >
-              {tab === 'overview' ? 'Estate Overview' : '🏆 Rankings'}
+              {tab === 'overview' ? 'Estate' : tab === 'leaderboard' ? '🏆 Rankings' : '⚡ Trading'}
             </button>
           ))}
         </div>
@@ -244,8 +245,14 @@ export function Network() {
           </motion.div>
         )}
 
+        {activeTab === 'trading' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="-mx-4">
+            <Trading />
+          </motion.div>
+        )}
+
         {/* Invite */}
-        <Card className="p-4">
+        {activeTab !== 'trading' && <Card className="p-4">
           <div className="flex items-center gap-3 mb-3">
             <Users size={16} className="text-brand-gold" />
             <p className="text-sm font-semibold text-text-primary">Invite a Neighbour</p>
@@ -260,7 +267,7 @@ export function Network() {
             {copied ? <Check size={14} /> : <Copy size={14} />}
             {copied ? 'Copied!' : 'Copy Invite Link'}
           </button>
-        </Card>
+        </Card>}
       </div>
     </div>
   );
