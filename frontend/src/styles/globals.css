@@ -1,0 +1,258 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-surface text-text-primary;
+    overscroll-behavior: none;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-border rounded-full;
+  }
+
+  /* Number formatting */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* Glass card effect */
+  .glass-card {
+    @apply bg-surface-card border border-surface-border rounded-2xl;
+    background: linear-gradient(180deg, rgba(30,30,30,0.8) 0%, rgba(20,20,20,0.9) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .glass-card-elevated {
+    @apply bg-surface-elevated border border-surface-border rounded-2xl;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  /* Brand gradient header */
+  .brand-header {
+    background: linear-gradient(135deg, #6E1A1A 0%, #4A1010 60%, #3A0808 100%);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .brand-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 60%;
+    height: 200%;
+    background: radial-gradient(ellipse, rgba(241,196,15,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Gold number display */
+  .gold-number {
+    @apply text-brand-gold tabular-nums font-bold;
+    text-shadow: 0 0 30px rgba(241, 196, 15, 0.3);
+  }
+
+  /* Stat chip */
+  .stat-chip {
+    @apply inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium;
+  }
+
+  /* Source pill */
+  .source-pill-generator {
+    @apply bg-energy-generator/10 text-energy-generator border border-energy-generator/20;
+  }
+
+  .source-pill-solar {
+    @apply bg-energy-solar/10 text-energy-solar border border-energy-solar/20;
+  }
+
+  .source-pill-grid {
+    @apply bg-energy-grid/10 text-energy-grid border border-energy-grid/20;
+  }
+
+  /* Status dot */
+  .status-dot {
+    @apply inline-block w-2 h-2 rounded-full;
+  }
+
+  .status-dot-online {
+    @apply bg-status-online shadow-[0_0_6px_rgba(34,197,94,0.5)];
+  }
+
+  .status-dot-offline {
+    @apply bg-status-offline;
+  }
+
+  .status-dot-not_connected {
+    @apply bg-text-muted;
+  }
+
+  /* Primary button */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm;
+    @apply bg-brand-gold text-brand-red-dark;
+    @apply transition-all duration-200 active:scale-95;
+    box-shadow: 0 0 20px rgba(241,196,15,0.2);
+  }
+
+  .btn-primary:hover {
+    @apply bg-brand-gold-light;
+    box-shadow: 0 0 30px rgba(241,196,15,0.35);
+  }
+
+  /* Secondary button */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm;
+    @apply bg-surface-elevated border border-surface-border text-text-primary;
+    @apply transition-all duration-200 active:scale-95;
+  }
+
+  .btn-secondary:hover {
+    @apply border-text-muted;
+  }
+
+  /* Ghost button */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium text-sm;
+    @apply text-text-secondary transition-all duration-200 active:scale-95;
+  }
+
+  .btn-ghost:hover {
+    @apply text-text-primary bg-surface-elevated;
+  }
+
+  /* Animated number counter */
+  @keyframes countUp {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .count-up {
+    animation: countUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Power pulse ring */
+  @keyframes powerRing {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+
+  .power-ring {
+    animation: powerRing 2s ease-out infinite;
+  }
+
+  /* Shimmer loading */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .shimmer {
+    background: linear-gradient(90deg, #1e1e1e 25%, #2a2a2a 50%, #1e1e1e 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    @apply rounded-lg;
+  }
+
+  /* Tab navigation */
+  .tab-bar {
+    @apply fixed bottom-0 left-0 right-0 z-50;
+    background: rgba(13,13,13,0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Page container */
+  .page {
+    @apply min-h-screen pb-24 overflow-y-auto;
+    background: #0D0D0D;
+  }
+
+  /* Section header */
+  .section-header {
+    @apply flex items-center justify-between px-4 mb-3;
+  }
+
+  .section-title {
+    @apply text-sm font-semibold text-text-secondary uppercase tracking-wider;
+  }
+
+  /* Alert card variants */
+  .alert-efficiency {
+    @apply border-l-4 border-l-status-warning bg-status-warning/5;
+  }
+
+  .alert-solar {
+    @apply border-l-4 border-l-brand-gold bg-brand-gold/5;
+  }
+
+  .alert-tip {
+    @apply border-l-4 border-l-status-info bg-status-info/5;
+  }
+
+  .alert-success {
+    @apply border-l-4 border-l-status-online bg-status-online/5;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    @apply h-1.5 rounded-full overflow-hidden bg-surface-border;
+  }
+
+  .progress-fill {
+    @apply h-full rounded-full transition-all duration-1000 ease-out;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

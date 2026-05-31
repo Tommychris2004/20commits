@@ -1,0 +1,18 @@
+{
+  "name": "gridnode-simulator",
+  "version": "1.0.0",
+  "description": "GridNode Smart Node simulator — generates realistic energy readings",
+  "main": "src/simulator.ts",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/simulator.ts",
+    "estate": "tsx src/estate.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.16.0",
+    "@types/node": "^22.0.0"
+  }
+}
