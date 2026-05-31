@@ -14,7 +14,6 @@ const DDL = /* sql */ `
 -- Extensions
 -- ----------------------------------------------------------------
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-CREATE EXTENSION IF NOT EXISTS "timescaledb" CASCADE;
 
 -- ----------------------------------------------------------------
 -- estates (multi-tenant)
@@ -79,16 +78,6 @@ CREATE TABLE IF NOT EXISTS readings (
   PRIMARY KEY (id, timestamp)
 );
 
--- Create hypertable only if not already one
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM timescaledb_information.hypertables
-    WHERE hypertable_name = 'readings'
-  ) THEN
-    PERFORM create_hypertable('readings', 'timestamp');
-  END IF;
-END$$;
 
 CREATE INDEX IF NOT EXISTS idx_readings_device_ts
   ON readings(device_id, timestamp DESC);

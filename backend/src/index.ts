@@ -6,6 +6,10 @@ import { rateLimit } from 'express-rate-limit';
 import { config } from './config.js';
 import { checkDbConnection } from './db/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Routes
 import { healthRouter } from './routes/health.js';
@@ -71,9 +75,11 @@ app.use('/api/estate', estateRouter);
 app.use('/api/trading', tradingRouter);
 app.use('/api/devices', devicesRouter);
 
-// ---- 404 handler ----
-app.use((_req, res) => {
-  res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Endpoint not found' } });
+// ---- Serve React frontend static files ----
+const frontendDist = path.resolve(__dirname, '../../frontend/dist');
+app.use(express.static(frontendDist));
+app.get('/{*path}', (_req, res) => {
+  res.sendFile(path.join(frontendDist, 'index.html'));
 });
 
 // ---- Central error handler (must be last) ----
