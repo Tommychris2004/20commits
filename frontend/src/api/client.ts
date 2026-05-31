@@ -1,6 +1,6 @@
 import { getAuth, clearAuth } from '../store/index.ts';
 
-const BASE = (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL ?? '/api';
+const BASE = (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL ?? '';
 
 class ApiError extends Error {
   constructor(
