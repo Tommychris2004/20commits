@@ -12,7 +12,7 @@ import { runMigrations } from './db/migrations.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const FRONTEND_DIST = path.resolve(__dirname, '../../frontend/dist');
+const FRONTEND_DIST = path.join(__dirname, 'public');
 
 // Routes
 import { healthRouter } from './routes/health.js';

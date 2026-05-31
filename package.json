@@ -6,7 +6,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "build": "cd frontend && npm ci && npm run build && cd ../backend && npm ci && npm run build",
+    "build": "cd frontend && npm ci && npm run build && cd ../backend && npm ci && npm run build && cp -r ../frontend/dist ./dist/public",
     "start": "node backend/dist/index.js"
   }
 }
