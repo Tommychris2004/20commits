@@ -1,11 +1,12 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Zap, Network, Leaf, User } from 'lucide-react';
+import { Zap, Network, Leaf, User, ArrowLeftRight } from 'lucide-react';
 import clsx from 'clsx';
 
 const tabs = [
   { path: '/', label: 'Energy', icon: Zap },
   { path: '/network', label: 'Network', icon: Network },
+  { path: '/trading', label: 'Trading', icon: ArrowLeftRight },
   { path: '/carbon', label: 'Carbon', icon: Leaf },
   { path: '/profile', label: 'Profile', icon: User },
 ];
